@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "WebSocket server for Twilio voice agent with Whisper",
   "main": "server.js",
-  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
