@@ -44,10 +44,11 @@ wss.on('connection', function connection(ws) {
 
           // Envia texto para o n8n
           try {
-            const response = await axios.post('https://SEU_N8N.com/webhook/processar-fala', {
+            const response = await axios.post('https://n8n.srv861921.hstgr.cloud/webhook/processar-fala', {
               text: result.trim(),
               callId: 'chamada123'
-            });
+          });
+
 
             // Aqui você trataria a resposta de áudio de volta
             // Ex: ws.send(Buffer.from(response.data.audio, 'base64'));
