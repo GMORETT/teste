@@ -44,7 +44,7 @@ wss.on('connection', function connection(ws) {
 
           // Envia texto para o n8n
           try {
-            const response = await axios.post('https://n8n.srv861921.hstgr.cloud/webhook/processar-fala', {
+            const response = await axios.post('https://n8n.srv861921.hstgr.cloud/webhook-test/a8864210-555a-4141-8fa8-46749cd0c3a9', {
               text: result.trim(),
               callId: 'chamada123'
           });
