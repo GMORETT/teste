@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: twilio-agent
+    env: node
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    plan: free
+    autoDeploy: true
+
+    buildFilter:
+      paths:
+        - .
+
+    runtime:
+      aptPackages:
+        - ffmpeg
+        - python3
+        - python3-pip
