@@ -5,6 +5,10 @@ const { spawn } = require('child_process');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
 const server = http.createServer(app);
@@ -13,7 +17,6 @@ const wss = new WebSocket.Server({ server });
 const PORT = process.env.PORT || 10000;
 app.use(express.urlencoded({ extended: true }));
 
-// Endpoint TwiML
 app.post('/voice', (req, res) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Vitoria-Neural" language="pt-BR">Olá! Pode falar.</Say><Pause length="1"/><Start><Stream url="wss://teste-zgv8.onrender.com" track="inbound_track"/></Start><Pause length="60"/></Response>`;
   console.log('[✅] Twilio fez POST no /voice');
@@ -21,7 +24,6 @@ app.post('/voice', (req, res) => {
   res.send(xml);
 });
 
-// WebSocket
 console.log('WebSocket configurando...');
 wss.on('connection', function connection(ws) {
   console.log('🟢 Conexão iniciada com Twilio via WebSocket');
@@ -55,61 +57,52 @@ wss.on('connection', function connection(ws) {
       const pcmBuffer = Buffer.concat(audioChunks);
       fs.writeFileSync(pcmPath, pcmBuffer);
 
-      console.log('[🎧] Arquivo .pcm salvo. Convertendo para .wav...');
-      const ffmpeg = spawn('ffmpeg', ['-f', 'mulaw', '-ar', '8000', '-i', pcmPath, wavPath]);
+      console.log('[🎧] Arquivo .pcm salvo. Convertendo para .wav com ffmpeg-static...');
 
-      ffmpeg.stderr.on('data', data => {
-        console.error('ffmpeg stderr:', data.toString());
-      });
+      ffmpeg()
+        .input(pcmPath)
+        .inputFormat('mulaw')
+        .audioFrequency(8000)
+        .output(wavPath)
+        .on('end', () => {
+          console.log('[🔁] Conversão para WAV concluída. Iniciando transcrição com Whisper...');
+          const whisper = spawn('python3', ['transcribe.py', wavPath]);
+          let result = '';
 
-      ffmpeg.on('close', (code) => {
-        console.log(`[🔁] Conversão para WAV concluída. Código FFmpeg: ${code}`);
-        console.log(`📁 WAV existe? ${fs.existsSync(wavPath)}`);
+          whisper.stdout.on('data', data => {
+            result += data.toString();
+            console.log('[Whisper STDOUT]', data.toString());
+          });
 
-        if (!fs.existsSync(wavPath)) {
-          console.error('❌ Arquivo WAV não foi gerado.');
-          return;
-        }
+          whisper.stderr.on('data', data => {
+            console.error('[Whisper STDERR]', data.toString());
+          });
 
-        console.log(`[🔁] Chamando transcribe.py com arquivo: ${wavPath}`);
-        const whisper = spawn('python3', ['transcribe.py', wavPath]);
-
-        let result = '';
-
-        whisper.stdout.on('data', data => {
-          const output = data.toString();
-          console.log('[Whisper STDOUT]', output);
-          result += output;
-        });
-
-        whisper.stderr.on('data', data => {
-          console.error('[Whisper STDERR]', data.toString());
-        });
-
-        whisper.on('close', async (code) => {
-          console.log(`[🔚] Whisper finalizado com código ${code}`);
-          const trimmed = result.trim();
-          console.log('📝 Texto transcrito:', trimmed || '[vazio]');
-
-          if (trimmed) {
-            try {
-              const webhookUrl = 'https://n8n.srv861921.hstgr.cloud/webhook-test/a8864210-555a-4141-8fa8-46749cd0c3a9';
-              const payload = { text: trimmed, callId: 'chamada123' };
-              await axios.post(webhookUrl, payload);
-              console.log('📤 Enviado ao n8n com sucesso.');
-            } catch (e) {
-              console.error('❌ Erro ao enviar para o n8n:', e.message);
+          whisper.on('close', async () => {
+            const trimmed = result.trim();
+            console.log('📝 Texto transcrito:', trimmed || '[vazio]');
+            if (trimmed) {
+              try {
+                const webhookUrl = 'https://n8n.srv861921.hstgr.cloud/webhook-test/a8864210-555a-4141-8fa8-46749cd0c3a9';
+                const payload = { text: trimmed, callId: 'chamada123' };
+                await axios.post(webhookUrl, payload);
+                console.log('📤 Enviado ao n8n com sucesso.');
+              } catch (e) {
+                console.error('❌ Erro ao enviar para o n8n:', e.message);
+              }
+            } else {
+              console.warn('⚠️ Nenhum texto transcrito para enviar.');
             }
-          } else {
-            console.warn('⚠️ Nenhum texto transcrito para enviar.');
-          }
 
-          // Limpa arquivos e buffer
-          fs.unlinkSync(pcmPath);
-          fs.unlinkSync(wavPath);
-          audioChunks = [];
-        });
-      });
+            fs.unlinkSync(pcmPath);
+            fs.unlinkSync(wavPath);
+            audioChunks = [];
+          });
+        })
+        .on('error', (err) => {
+          console.error('❌ Erro no ffmpeg-static:', err.message);
+        })
+        .run();
     }
   });
 });
