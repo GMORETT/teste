@@ -16,7 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Rota TwiML
 app.post('/voice', (req, res) => {
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Vitoria-Neural" language="pt-BR">Olá! Pode falar.</Say><Pause length="1"/><Start><Stream url="wss://teste-zgv8.onrender.com"><Parameter name="track" value="inbound_audio" /></Stream></Start></Response>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Vitoria-Neural" language="pt-BR">Olá! Pode falar.</Say><Pause length="1"/><Start><Stream url="wss://teste-zgv8.onrender.com" track="inbound_track"/></Start></Response>`;
   console.log('[✅] Twilio fez POST no /voice');
   res.type('text/xml');
   res.send(xml);
