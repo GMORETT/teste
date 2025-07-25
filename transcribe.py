@@ -11,12 +11,13 @@ try:
 
     print(f"[🔍] Iniciando transcrição de: {audio_path}")
 
-    model = WhisperModel("base", compute_type="int8")
+    # Usando modelo menor e mais leve
+    model = WhisperModel("tiny", compute_type="int8")
+
     segments, _ = model.transcribe(audio_path, language="pt")
 
-    print("[✅] Transcrição completa:")
-    for segment in segments:
-        print(segment.text, end=' ')
+    full_text = ' '.join(segment.text for segment in segments)
+    print(f"[✅] Transcrição completa:\n{full_text.strip()}")
 
 except Exception as e:
     print(f"[❌] Erro na transcrição: {str(e)}", file=sys.stderr)
