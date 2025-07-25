@@ -2,6 +2,7 @@
   "name": "twilio-voice-whisper",
   "version": "1.0.0",
   "description": "Servidor WebSocket com transcrição de áudio via Whisper",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
