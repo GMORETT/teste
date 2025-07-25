@@ -1,14 +1,17 @@
 {
-  "name": "twilio-voice-ws",
+  "name": "twilio-voice-whisper",
   "version": "1.0.0",
+  "description": "Servidor WebSocket com transcrição de áudio via Whisper",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "ws": "^8.13.0",
+    "axios": "^1.6.8",
     "twilio": "^4.15.0",
-    "axios": "^1.6.0"
+    "express": "^4.19.2",
+    "ffmpeg-static": "^4.4.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "ws": "^8.17.0"
   }
 }
