@@ -12,7 +12,7 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server }); // 👈 SEM path e SEM noServer
 
 const PORT = process.env.PORT || 10000;
 app.use(express.urlencoded({ extended: true }));
@@ -28,7 +28,6 @@ console.log('WebSocket configurando...');
 wss.on('connection', function connection(ws) {
   console.log('🟢 Conexão iniciada com Twilio via WebSocket');
   let audioChunks = [];
-  let frameCount = 0;
 
   ws.on('message', async function incoming(message) {
     if (typeof message === 'string') {
@@ -37,7 +36,7 @@ wss.on('connection', function connection(ws) {
         if (json.event === 'start') {
           console.log('▶️ Evento START recebido:', json.start);
         } else if (json.event === 'media') {
-          // evento comum, não precisa logar toda vez
+          console.log('🎙️ Evento MEDIA recebido');
         } else if (json.event === 'stop') {
           console.log('⏹️ Evento STOP recebido');
         } else {
@@ -49,12 +48,7 @@ wss.on('connection', function connection(ws) {
       return;
     }
 
-    // ⚠️ Diminuição de logs a cada frame
-    frameCount++;
-    if (frameCount % 20 === 0) {
-      console.log(`🔊 Recebidos ${frameCount} frames de áudio...`);
-    }
-
+    console.log(`🔉 Frame binário recebido. Tamanho: ${message.length || message.byteLength}`);
     audioChunks.push(message);
 
     if (audioChunks.length >= 20) {
@@ -63,7 +57,7 @@ wss.on('connection', function connection(ws) {
       const pcmBuffer = Buffer.concat(audioChunks);
       fs.writeFileSync(pcmPath, pcmBuffer);
 
-      console.log('[🎧] Conversão iniciada: .pcm → .wav');
+      console.log('[🎧] Arquivo .pcm salvo. Convertendo para .wav com ffmpeg-static...');
 
       ffmpeg()
         .input(pcmPath)
@@ -71,12 +65,13 @@ wss.on('connection', function connection(ws) {
         .audioFrequency(8000)
         .output(wavPath)
         .on('end', () => {
-          console.log('[🔁] .wav gerado. Rodando Whisper...');
+          console.log('[🔁] Conversão para WAV concluída. Iniciando transcrição com Whisper...');
           const whisper = spawn('python3', ['transcribe.py', wavPath]);
           let result = '';
 
           whisper.stdout.on('data', data => {
             result += data.toString();
+            console.log('[Whisper STDOUT]', data.toString());
           });
 
           whisper.stderr.on('data', data => {
@@ -105,7 +100,7 @@ wss.on('connection', function connection(ws) {
           });
         })
         .on('error', (err) => {
-          console.error('❌ Erro no ffmpeg:', err.message);
+          console.error('❌ Erro no ffmpeg-static:', err.message);
         })
         .run();
     }
