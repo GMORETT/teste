@@ -15,7 +15,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Endpoint TwiML
 app.post('/voice', (req, res) => {
-  app.post('/voice', (req, res) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Vitoria-Neural" language="pt-BR">Olá! Pode falar.</Say><Pause length="1"/><Start><Stream url="wss://teste-zgv8.onrender.com" track="inbound_track"/></Start><Pause length="60"/></Response>`;
   console.log('[✅] Twilio fez POST no /voice');
   res.type('text/xml');
@@ -49,7 +48,7 @@ wss.on('connection', function connection(ws) {
     console.log(`🔉 Frame binário recebido. Tamanho: ${message.length || message.byteLength}`);
     audioChunks.push(message);
 
-    if (audioChunks.length >= 20) { // Teste com menos chunks
+    if (audioChunks.length >= 20) {
       const pcmPath = path.join(__dirname, 'audio.pcm');
       const wavPath = path.join(__dirname, 'audio.wav');
       const pcmBuffer = Buffer.concat(audioChunks);
@@ -86,7 +85,6 @@ wss.on('connection', function connection(ws) {
             console.warn('⚠️ Nenhum texto transcrito para enviar.');
           }
 
-          // Cleanup
           fs.unlinkSync(pcmPath);
           fs.unlinkSync(wavPath);
           audioChunks = [];
