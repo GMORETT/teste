@@ -16,6 +16,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Endpoint /voice que responde com TwiML
 app.post('/voice', (req, res) => {
+  console.log('[✅] Twilio fez POST no /voice');
+
   const xml = `
     <?xml version="1.0" encoding="UTF-8"?>
     <Response>
