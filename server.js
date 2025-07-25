@@ -16,19 +16,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // Rota TwiML
 app.post('/voice', (req, res) => {
-  cconst xml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say>Iniciando áudio</Say>
-  <Pause length="1"/>
-  <Start>
-    <Stream url="wss://teste-zgv8.onrender.com" track="inbound_audio"/>
-  </Start>
-</Response>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Vitoria-Neural" language="pt-BR">Olá! Pode falar.</Say><Pause length="1"/><Start><Stream url="wss://teste-zgv8.onrender.com" track="inbound_audio"/></Start></Response>`;
   console.log('[✅] Twilio fez POST no /voice');
   res.type('text/xml');
   res.send(xml);
 });
-
 // WebSocket
 console.log('WebSocket configurando...');
 wss.on('connection', function connection(ws) {
