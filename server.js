@@ -66,8 +66,13 @@ wss.on('connection', function connection(ws) {
         const whisper = spawn('python3', ['transcribe.py', wavPath]);
         let result = '';
 
-        whisper.stdout.on('data', data => result += data.toString());
-        whisper.stderr.on('data', data => console.error('Whisper stderr:', data.toString()));
+        whisper.stdout.on('data', data => {
+          console.log('[Whisper STDOUT]', data.toString());
+        });
+        whisper.stderr.on('data', data => {
+          console.error('[Whisper STDERR]', data.toString());
+        });
+
 
         whisper.on('close', async () => {
           const trimmed = result.trim();
