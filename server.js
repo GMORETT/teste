@@ -20,6 +20,7 @@ app.post('/voice', (req, res) => {
   res.type('text/xml');
   res.send(xml);
 });
+
 // WebSocket
 console.log('WebSocket configurando...');
 wss.on('connection', function connection(ws) {
@@ -61,22 +62,35 @@ wss.on('connection', function connection(ws) {
         console.error('ffmpeg stderr:', data.toString());
       });
 
-      ffmpeg.on('exit', () => {
-        console.log('[🔁] Conversão para WAV concluída. Iniciando transcrição com Whisper...');
+      ffmpeg.on('close', (code) => {
+        console.log(`[🔁] Conversão para WAV concluída. Código FFmpeg: ${code}`);
+        console.log(`📁 WAV existe? ${fs.existsSync(wavPath)}`);
+
+        if (!fs.existsSync(wavPath)) {
+          console.error('❌ Arquivo WAV não foi gerado.');
+          return;
+        }
+
+        console.log(`[🔁] Chamando transcribe.py com arquivo: ${wavPath}`);
         const whisper = spawn('python3', ['transcribe.py', wavPath]);
+
         let result = '';
 
         whisper.stdout.on('data', data => {
-          console.log('[Whisper STDOUT]', data.toString());
+          const output = data.toString();
+          console.log('[Whisper STDOUT]', output);
+          result += output;
         });
+
         whisper.stderr.on('data', data => {
           console.error('[Whisper STDERR]', data.toString());
         });
 
-
-        whisper.on('close', async () => {
+        whisper.on('close', async (code) => {
+          console.log(`[🔚] Whisper finalizado com código ${code}`);
           const trimmed = result.trim();
           console.log('📝 Texto transcrito:', trimmed || '[vazio]');
+
           if (trimmed) {
             try {
               const webhookUrl = 'https://n8n.srv861921.hstgr.cloud/webhook-test/a8864210-555a-4141-8fa8-46749cd0c3a9';
@@ -90,6 +104,7 @@ wss.on('connection', function connection(ws) {
             console.warn('⚠️ Nenhum texto transcrito para enviar.');
           }
 
+          // Limpa arquivos e buffer
           fs.unlinkSync(pcmPath);
           fs.unlinkSync(wavPath);
           audioChunks = [];
